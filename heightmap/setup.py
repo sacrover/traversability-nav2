@@ -23,6 +23,7 @@ setup(
     entry_points={
         "console_scripts": [
             "heightmap_occupancy_grid = heightmap.heightmap_occupancy_grid:main",
+            "heightmap_transform = heightmap.heightmap_transform:main",
         ],
     },
 )
