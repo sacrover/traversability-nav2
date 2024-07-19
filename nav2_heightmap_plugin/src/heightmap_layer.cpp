@@ -16,12 +16,14 @@ void HeightmapLayer::onInitialize()
 {
   auto node = node_.lock();
   declareParameter("enabled", rclcpp::ParameterValue(true));
+  declareParameter("threshold", rclcpp::ParameterValue(0)); // Define the threshold parameter
   node->get_parameter(name_ + "." + "enabled", enabled_);
+  node->get_parameter(name_ + "." + "threshold", threshold_);
 
   costmap_ = layered_costmap_->getCostmap();
 
   occupancy_grid_sub_ = node->create_subscription<nav_msgs::msg::OccupancyGrid>(
-    "/heightmap", 10, std::bind(&HeightmapLayer::occupancyGridCallback, this, std::placeholders::_1));
+    "/heightmap_odom", 10, std::bind(&HeightmapLayer::occupancyGridCallback, this, std::placeholders::_1));
 
   tfBuffer_ = std::make_shared<tf2_ros::Buffer>(node->get_clock());
   tfListener_ = std::make_shared<tf2_ros::TransformListener>(*tfBuffer_);
@@ -38,20 +40,35 @@ void HeightmapLayer::occupancyGridCallback(const nav_msgs::msg::OccupancyGrid::S
   latest_occupancy_grid_ = msg;
 }
 
-void HeightmapLayer::updateBounds(double robot_x, double robot_y, double /*robot_yaw*/, double * min_x,
-  double * min_y, double * max_x, double * max_y)
+void HeightmapLayer::updateBounds(double robot_x, double robot_y, double /*robot_yaw*/, double* min_x, double* min_y, double* max_x, double* max_y)
 {
-  std::lock_guard<std::mutex> guard(data_mutex_);
-  if (latest_occupancy_grid_) {
-    if (rolling_window_) {
-    updateOrigin(robot_x - 5.0 / 2, robot_y - 5.0 / 2);
-  }
-    // *min_x = 0.0;
-    // *min_y = 0.0;
-    // *max_x = latest_occupancy_grid_->info.width * latest_occupancy_grid_->info.resolution;
-    // *max_y = latest_occupancy_grid_->info.height * latest_occupancy_grid_->info.resolution;
-  }
-  useExtraBounds(min_x, min_y, max_x, max_y);
+    if (!enabled_ || !latest_occupancy_grid_) {
+        return;
+    }
+
+    if (layered_costmap_->isRolling()) {
+      updateOrigin(robot_x - getSizeInMetersX() / 2, robot_y - getSizeInMetersY() / 2);
+    }
+
+    // Get the dimensions and resolution of the occupancy grid
+    unsigned int width = latest_occupancy_grid_->info.width;
+    unsigned int height = latest_occupancy_grid_->info.height;
+    double resolution = latest_occupancy_grid_->info.resolution;
+
+    // Get the origin of the occupancy grid
+    double origin_x = latest_occupancy_grid_->info.origin.position.x;
+    double origin_y = latest_occupancy_grid_->info.origin.position.y;
+
+    // Update the bounds of the costmap to include the entire occupancy grid
+    double grid_min_x = origin_x;
+    double grid_min_y = origin_y;
+    double grid_max_x = 4*(origin_x + width * resolution);
+    double grid_max_y = 4*(origin_y + height * resolution);
+
+    *min_x = std::min(*min_x, grid_min_x);
+    *min_y = std::min(*min_y, grid_min_y);
+    *max_x = std::max(*max_x, grid_max_x);
+    *max_y = std::max(*max_y, grid_max_y);
 }
 
 void HeightmapLayer::updateCosts(nav2_costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
@@ -61,40 +78,53 @@ void HeightmapLayer::updateCosts(nav2_costmap_2d::Costmap2D& master_grid, int mi
     return;
   }
 
-  geometry_msgs::msg::TransformStamped transform;
-  try {
-    transform = tfBuffer_->lookupTransform("map", latest_occupancy_grid_->header.frame_id, tf2::TimePointZero);
-  } catch (tf2::TransformException &ex) {
-    RCLCPP_WARN(rclcpp::get_logger("nav2_heightmap_plugin"), "Could not transform %s", ex.what());
-    return;
-  }
+  // Get dimensions of the occupancy grid
+  const auto& info = latest_occupancy_grid_->info;
+  int width = info.width;
+  int height = info.height;
+  double resolution = info.resolution;
+  double origin_x = info.origin.position.x;
+  double origin_y = info.origin.position.y;
 
-  unsigned char* costmap_array = costmap_->getCharMap();
-  for (unsigned int i = 0; i < latest_occupancy_grid_->info.width; ++i) {
-    for (unsigned int j = 0; j < latest_occupancy_grid_->info.height; ++j) {
-      int index = i + j * latest_occupancy_grid_->info.width;
+  // Get the pointer to the master costmap array
+  unsigned char* costmap_array = master_grid.getCharMap();
 
-      // Transform point from os_sensor frame to map frame
+  // Iterate through the specified window
+  for (int i = min_i; i < max_i; ++i) {
+    for (int j = min_j; j < max_j; ++j) {
+      // Convert costmap coordinates to occupancy grid coordinates
+      double wx, wy;
+      master_grid.mapToWorld(i, j, wx, wy);
 
-      geometry_msgs::msg::PointStamped point_in, point_out;
-      point_in.header.frame_id = latest_occupancy_grid_->header.frame_id;
-      point_in.point.x = i * latest_occupancy_grid_->info.resolution;
-      point_in.point.y = j * latest_occupancy_grid_->info.resolution;
-      point_in.point.z = 0.0;
+      int mx = static_cast<int>((wx - origin_x) / resolution);
+      int my = static_cast<int>((wy - origin_y) / resolution);
 
-      tf2::doTransform(point_in, point_out, transform);
+      // Check bounds
+      if (mx >= 0 && mx < width && my >= 0 && my < height) {
+        int index = my * width + mx;
+        int8_t value = latest_occupancy_grid_->data[index];
 
-      unsigned int map_x, map_y;
-      // costmap_->worldToMap(i * latest_occupancy_grid_->info.resolution, j * latest_occupancy_grid_->info.resolution, map_x, map_y);
-       if (costmap_->worldToMap(point_out.point.x, point_out.point.y, map_x, map_y)) {
-        int costmap_index = costmap_->getIndex(map_x, map_y);
-        costmap_array[costmap_index] = latest_occupancy_grid_->data[index];
-       }
+        // Convert occupancy grid value to costmap cost
+        if (value == -1) {
+          continue; // Unknown value, skip
+        }
+
+        unsigned char cost = nav2_costmap_2d::FREE_SPACE;
+        if (value >= 0 && value <= 100) {
+          cost = static_cast<unsigned char>((value / 100.0) * nav2_costmap_2d::LETHAL_OBSTACLE);
+        }
+
+        // Calculate the index in the master costmap array
+        int costmap_index = master_grid.getIndex(i, j);
+        // Set the cost in the master costmap array
+        costmap_array[costmap_index] = cost;
+      }
     }
   }
 
   updateWithOverwrite(master_grid, min_i, min_j, max_i, max_j);
 }
+  
 
 void HeightmapLayer::onFootprintChanged()
 {
