@@ -30,7 +30,7 @@ class PointCloudToHeightmap(Node):
         self.height = int(2 * self.max_range // self.resolution)
 
         # Set the heightmap bounds
-        self.min_val_height = -1.5
+        self.min_val_height = -1.0
         self.max_val_height = 1.0
 
         # Set the gradient threshold
@@ -178,8 +178,8 @@ class PointCloudToHeightmap(Node):
                 and z >= self.min_val_height
                 and z <= self.max_val_height
             ):
-                x_idx = int((-x + self.max_range) // self.resolution) - 1
-                y_idx = int((-y + self.max_range) // self.resolution) - 1
+                x_idx = int((-x + self.max_range) // self.resolution - 0.5)
+                y_idx = int((-y + self.max_range) // self.resolution - 0.5)
                 heightmap[y_idx, x_idx] = min(max(heightmap[y_idx, x_idx], z), 1)
 
         heightmap_normalized = (
