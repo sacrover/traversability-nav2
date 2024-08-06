@@ -1,0 +1,8 @@
+<library path="z_surface_rviz_plugin">
+  <class name="z_surface_rviz_plugin::MyDisplay" type="z_surface_rviz_plugin::MyDisplay" base_class_type="rviz_common::Display">
+    <description>
+      A custom RViz plugin for displaying 3D surface based on height.
+    </description>
+    <message_type>sensor_msgs/msg/PointCloud2</message_type>
+  </class>
+</library>
