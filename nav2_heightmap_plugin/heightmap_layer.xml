@@ -1,5 +1,0 @@
-<library path="nav2_heightmap_plugin_core">
-  <class type="nav2_heightmap_plugin::HeightmapLayer" base_class_type="nav2_costmap_2d::Layer">
-    <description>This is a plugin which puts height costs from Pointcloud data to the costmap</description>
-  </class>
-</library>
