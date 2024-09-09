@@ -21,21 +21,17 @@ find_package(rviz_common REQUIRED)
 find_package(rviz_default_plugins REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(quad_surface_msg REQUIRED)
 find_package(Qt5 REQUIRED COMPONENTS Widgets)
 
-
-# find_package(ament_cmake REQUIRED)
-# find_package(ament_cmake_ros REQUIRED)
-# find_package(pluginlib REQUIRED)
-# find_package(rviz_common REQUIRED)
-# find_package(rviz_plugin_tutorial_msgs REQUIRED)
-
-
-include_directories(include
+# Include directories
+include_directories(
+  include
   ${PROJECT_NAME}/include
   ${rviz_common_INCLUDE_DIRS}
   ${rclcpp_INCLUDE_DIRS}
   ${sensor_msgs_INCLUDE_DIRS}
+  ${quad_surface_msg_INCLUDE_DIRS}  # Add this line
   ${Qt5Widgets_INCLUDE_DIRS}
 )
 
@@ -59,12 +55,13 @@ target_link_libraries(${PROJECT_NAME}
   ${rviz_common_LIBRARIES}
   ${rclcpp_LIBRARIES}
   ${sensor_msgs_LIBRARIES}
+  ${quad_surface_msg_LIBRARIES}  
   ${Qt5Widgets_LIBRARIES}
 )
 
 # Export libraries and dependencies
 ament_export_libraries(${PROJECT_NAME})
-ament_export_dependencies(rviz_common rclcpp sensor_msgs)
+ament_export_dependencies(rviz_common rclcpp sensor_msgs heightmap_msg)  # Add heightmap_msg here
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

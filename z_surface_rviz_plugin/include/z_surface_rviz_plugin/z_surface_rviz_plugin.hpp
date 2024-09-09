@@ -5,12 +5,12 @@
 #include <rviz_common/message_filter_display.hpp>
 #include <OgreManualObject.h>
 #include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <quad_surface_msg/msg/quad_surface.hpp>  // Include the QuadSurface message header
 
 namespace z_surface_rviz_plugin
 {
 
-class MyDisplay : public rviz_common::MessageFilterDisplay<sensor_msgs::msg::PointCloud2>
+class MyDisplay : public rviz_common::MessageFilterDisplay<quad_surface_msg::msg::QuadSurface>
 {
   Q_OBJECT
 public:
@@ -20,8 +20,8 @@ public:
   void onInitialize() override;
 
 protected:
-  void createGridSurface(const std::vector<float>& x_values, const std::vector<float>& y_values, const std::vector<float>& z_values);
-  void processMessage(const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg) override;
+  void createGridSurface(const quad_surface_msg::msg::QuadSurface::ConstSharedPtr quad_surface);
+  void processMessage(const quad_surface_msg::msg::QuadSurface::ConstSharedPtr msg) override;  // Update the processMessage method
 
 private Q_SLOTS:
   void updateTopic();

@@ -1,0 +1,5 @@
+<library path="nav2_traversability_plugin_core">
+  <class type="nav2_traversability_plugin::TraversabilityLayer" base_class_type="nav2_costmap_2d::Layer">
+    <description>This is a plugin which puts traversability costs based on height gradients to the costmap</description>
+  </class>
+</library>

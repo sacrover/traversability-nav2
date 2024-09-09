@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>traversability</name>
+  <version>0.0.0</version>
+  <description>Performs traversabilty assessment based on LiDAR data</description>
+  <maintainer email="mail.sacrover@gmail.com">sv</maintainer>
+  <license>TODO: License declaration</license>
+  
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>rosidl_default_runtime</depend>
+  <depend>rclpy</depend>
+
+  <build_depend>heightmap_msg</build_depend>
+  <exec_depend>heightmap_msg</exec_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+  
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

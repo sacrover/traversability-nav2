@@ -1,0 +1,39 @@
+traversability/*:
+  ros__parameters:
+    norm_max: 1000.0
+    norm_min: 0.0
+    min_height: -3.0
+    max_height: 0.5
+    out_frame: "odom"
+
+traversability/fused_traversability_map:
+  ros__parameters:
+    max_gradient: 2.0
+    min_gradient: 0.0
+    traversability_max_gradient: 0.9
+    traversability_min_gradient: 0.5
+    process_noise: 0.04
+    measurement_noise: 0.01
+    clear_map_after: 1
+    save_map: false
+    publish_fused_heightmap: True
+    save_map_interval: 5.0
+    publish_map_interval: 2.0
+    subscription_topic: "heightmap_odom"
+    global_heightmap_topic: "global_heightmap"
+    fused_heightmap_topic: "heightmap_fused_odom"
+    traversability_topic: "traversability_odom"
+
+traversability/pointcloud_to_heightmap:
+  ros__parameters:
+    subscription_topic: "/ouster/points"
+    heightmap_topic: "heightmap"
+    gradientmap_topic: "height_gradient_map"
+    traversability_topic: "traversability"
+    resolution: 0.1 # meters per cell
+    max_range: 7.0 # max range to consider in the heightmap
+    robot_footprint: 1.0 # radius (m)
+    gradient_threshold: 0.07
+    sensor_frame: "os_sensor"
+    robot_frame: "base_link"
+    timeout_duration: 0.2 # seconds
